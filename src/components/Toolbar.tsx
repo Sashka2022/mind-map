@@ -9,6 +9,7 @@ export function Toolbar({ onOpenPrint }: ToolbarProps) {
   const title = useMapStore((s) => s.title);
   const saveNow = useMapStore((s) => s.saveNow);
   const lastSavedAt = useMapStore((s) => s.lastSavedAt);
+  const requestReset = useMapStore((s) => s.requestReset);
   const [showSaved, setShowSaved] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,9 @@ export function Toolbar({ onOpenPrint }: ToolbarProps) {
       </button>
       <button type="button" onClick={onOpenPrint}>
         הדפסה / PDF
+      </button>
+      <button type="button" onClick={requestReset}>
+        איפוס מפה
       </button>
     </div>
   );

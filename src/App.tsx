@@ -4,6 +4,7 @@ import { Onboarding } from './components/Onboarding';
 import { Toolbar } from './components/Toolbar';
 import { MindMapCanvas } from './components/MindMapCanvas';
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog';
+import { ConfirmResetDialog } from './components/ConfirmResetDialog';
 import { PrintPreviewModal } from './components/PrintPreviewModal';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Toolbar onOpenPrint={() => setPrintOpen(true)} />
       <MindMapCanvas />
       <ConfirmDeleteDialog />
+      <ConfirmResetDialog />
       {printOpen && <PrintPreviewModal onClose={() => setPrintOpen(false)} />}
     </div>
   );
