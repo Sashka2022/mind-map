@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { useNodeSizeReporter } from '../../layout/nodeSizing';
-import { HIGHLIGHT_COLOR_LABELS, HIGHLIGHT_COLORS, MAX_MAIN_BRANCHES, type HighlightColor } from '../../types';
+import { HIGHLIGHT_COLOR_LABELS, HIGHLIGHT_COLORS, type HighlightColor } from '../../types';
 import { useIsExportMode } from '../../export/exportMode';
 
 interface NodeBoxProps {
@@ -13,6 +13,7 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
   const node = useMapStore((s) => s.nodes[id]);
   const size = useMapStore((s) => s.sizes[id]);
   const rootId = useMapStore((s) => s.rootId);
+  const photoUrl = useMapStore((s) => s.photoUrl);
   const renameNode = useMapStore((s) => s.renameNode);
   const toggleAchieved = useMapStore((s) => s.toggleAchieved);
   const setNodeHighlight = useMapStore((s) => s.setNodeHighlight);
@@ -43,7 +44,6 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
   if (!node) return null;
 
   const isLevel1 = node.parentId === rootId;
-  const canAddMore = isRoot ? node.children.length < MAX_MAIN_BRANCHES : true;
 
   function startEdit() {
     if (isExport) return;
@@ -85,6 +85,8 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
         }
         onDoubleClick={startEdit}
       >
+        {isRoot && photoUrl && <img className="mm-root-avatar" src={photoUrl} alt="" />}
+
         {!isRoot && (
           <button
             type="button"
@@ -143,16 +145,9 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
 
         {!isExport && (
           <span className="mm-node-inline-actions">
-            {canAddMore && (
-              <button
-                type="button"
-                className="mm-node-action-btn add nodrag"
-                title="הוסף ענף"
-                onClick={onAdd}
-              >
-                +
-              </button>
-            )}
+            <button type="button" className="mm-node-action-btn add nodrag" title="הוסף ענף" onClick={onAdd}>
+              +
+            </button>
             {!isRoot && (
               <button
                 type="button"

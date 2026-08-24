@@ -3,19 +3,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { applyOverrides, computeLayout } from '../layout/treeLayout';
 import { estimateSize } from '../layout/nodeSizing';
-import {
-  ALL_DIRECTIONS,
-  MAX_MAIN_BRANCHES,
-  type Direction,
-  type HighlightColor,
-  type MapNode,
-  type Point,
-  type Size,
-} from '../types';
+import { ALL_DIRECTIONS, type Direction, type HighlightColor, type MapNode, type Point, type Size } from '../types';
 
 interface MapState {
   initialized: boolean;
   title: string;
+  /** Data URL of the onboarding photo/selfie, shown as the root's avatar. */
+  photoUrl: string | null;
   rootId: string;
   nodes: Record<string, MapNode>;
   sizes: Record<string, Size>;
@@ -27,10 +21,12 @@ interface MapState {
   positions: Record<string, Point>;
   lastSavedAt: number | null;
   pendingDeleteId: string | null;
+  /** True while the "reset the whole map" confirmation dialog is open. */
+  pendingReset: boolean;
   /** Node that should immediately open in edit mode (set right after it's created). */
   editRequestId: string | null;
 
-  initMap: (title: string) => void;
+  initMap: (title: string, photoUrl?: string | null) => void;
   addMainBranch: () => void;
   addChild: (parentId: string) => void;
   renameNode: (id: string, text: string) => void;
@@ -46,6 +42,9 @@ interface MapState {
   requestDelete: (id: string) => void;
   cancelDelete: () => void;
   confirmDelete: () => void;
+  requestReset: () => void;
+  cancelReset: () => void;
+  confirmReset: () => void;
   clearEditRequest: () => void;
 }
 
@@ -58,9 +57,19 @@ function makeNode(partial: Pick<MapNode, 'text' | 'parentId'> & Partial<MapNode>
   };
 }
 
-function freeDirection(nodes: Record<string, MapNode>, rootId: string): Direction | undefined {
-  const used = new Set(nodes[rootId].children.map((id) => nodes[id].direction));
-  return ALL_DIRECTIONS.find((d) => !used.has(d));
+/**
+ * No cap on how many main branches the root can have: prefer a direction
+ * with no branch yet, and once all four are taken, pick whichever has the
+ * fewest so new branches stay balanced around the root instead of piling
+ * onto one side.
+ */
+function pickDirectionForNewBranch(nodes: Record<string, MapNode>, rootId: string): Direction {
+  const counts: Record<Direction, number> = { right: 0, left: 0, down: 0, up: 0 };
+  for (const childId of nodes[rootId].children) {
+    const direction = nodes[childId].direction ?? 'right';
+    counts[direction] += 1;
+  }
+  return ALL_DIRECTIONS.reduce((best, d) => (counts[d] < counts[best] ? d : best), ALL_DIRECTIONS[0]);
 }
 
 function collectDescendants(nodes: Record<string, MapNode>, id: string, out: string[] = []): string[] {
@@ -88,6 +97,7 @@ export const useMapStore = create<MapState>()(
     (set, get) => ({
       initialized: false,
       title: '',
+      photoUrl: null,
       rootId: '',
       nodes: {},
       sizes: {},
@@ -96,9 +106,10 @@ export const useMapStore = create<MapState>()(
       positions: {},
       lastSavedAt: null,
       pendingDeleteId: null,
+      pendingReset: false,
       editRequestId: null,
 
-      initMap: (title) => {
+      initMap: (title, photoUrl = null) => {
         const rootId = nanoid(8);
         const personalId = nanoid(8);
         const professionalId = nanoid(8);
@@ -133,15 +144,13 @@ export const useMapStore = create<MapState>()(
         for (const node of Object.values(nodes)) sizes[node.id] = estimateSize(node.text);
 
         const { autoPositions, positions } = relayoutAll(nodes, rootId, sizes, {});
-        set({ initialized: true, title, rootId, nodes, sizes, autoPositions, positions, overrides: {} });
+        set({ initialized: true, title, photoUrl, rootId, nodes, sizes, autoPositions, positions, overrides: {} });
       },
 
       addMainBranch: () => {
         const { nodes, rootId, sizes, overrides } = get();
         const root = nodes[rootId];
-        if (root.children.length >= MAX_MAIN_BRANCHES) return;
-        const direction = freeDirection(nodes, rootId);
-        if (!direction) return;
+        const direction = pickDirectionForNewBranch(nodes, rootId);
 
         const id = nanoid(8);
         const text = 'ענף חדש';
@@ -281,6 +290,25 @@ export const useMapStore = create<MapState>()(
         set({ pendingDeleteId: null });
       },
 
+      requestReset: () => set({ pendingReset: true }),
+      cancelReset: () => set({ pendingReset: false }),
+      confirmReset: () =>
+        set({
+          initialized: false,
+          title: '',
+          photoUrl: null,
+          rootId: '',
+          nodes: {},
+          sizes: {},
+          autoPositions: {},
+          overrides: {},
+          positions: {},
+          lastSavedAt: null,
+          pendingDeleteId: null,
+          pendingReset: false,
+          editRequestId: null,
+        }),
+
       clearEditRequest: () => set({ editRequestId: null }),
     }),
     {
@@ -288,6 +316,7 @@ export const useMapStore = create<MapState>()(
       partialize: (state) => ({
         initialized: state.initialized,
         title: state.title,
+        photoUrl: state.photoUrl,
         rootId: state.rootId,
         nodes: state.nodes,
         sizes: state.sizes,

@@ -2,8 +2,6 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export const ALL_DIRECTIONS: Direction[] = ['right', 'left', 'down', 'up'];
 
-export const MAX_MAIN_BRANCHES = 4;
-
 /** Optional visual emphasis the user can put on any node, independent of level/direction. */
 export type HighlightColor = 'yellow' | 'red' | 'pink';
 

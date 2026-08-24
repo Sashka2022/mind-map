@@ -95,8 +95,11 @@ function assignPositions(
  * Computes a position for every node in the tree. Each of the root's children
  * (main branches) grows outward from the root in its assigned cardinal
  * direction; every descendant inherits that direction. Root itself is placed
- * at the origin. Each branch is centered independently on the perpendicular
- * zero-line through the root, which balances the four quadrants for free.
+ * at the origin. There's no cap on how many branches the root can have —
+ * branches that share a direction are spread along the perpendicular axis
+ * the same way a node's own children are (computeExtent/SIBLING_GAP), with
+ * the whole group centered on the zero-line so a single branch in a
+ * direction still lands exactly where it always did.
  */
 export function computeLayout(
   nodes: Record<string, MapNode>,
@@ -107,19 +110,30 @@ export function computeLayout(
   const root = nodes[rootId];
   if (!root) return positions;
 
+  const groups = new Map<Direction, string[]>();
   for (const branchId of root.children) {
-    const branch = nodes[branchId];
-    const direction = branch.direction ?? 'right';
+    const direction = nodes[branchId].direction ?? 'right';
+    (groups.get(direction) ?? groups.set(direction, []).get(direction)!).push(branchId);
+  }
+
+  for (const [direction, branchIds] of groups) {
     const axis = AXIS[direction];
-
     const extents: Record<string, number> = {};
-    computeExtent(branchId, direction, nodes, sizes, extents);
+    for (const branchId of branchIds) computeExtent(branchId, direction, nodes, sizes, extents);
 
+    const total =
+      branchIds.reduce((sum, id) => sum + extents[id], 0) + (branchIds.length - 1) * SIBLING_GAP;
+    let cursor = -total / 2;
     const rootPrimarySize = primaryOf(getSize(sizes, rootId), axis.primary);
-    const branchPrimarySize = primaryOf(getSize(sizes, branchId), axis.primary);
-    const primaryCoord = axis.sign * (rootPrimarySize / 2 + ROOT_GAP + branchPrimarySize / 2);
 
-    assignPositions(branchId, direction, primaryCoord, 0, nodes, sizes, extents, positions);
+    for (const branchId of branchIds) {
+      const extent = extents[branchId];
+      const branchCenter = cursor + extent / 2;
+      const branchPrimarySize = primaryOf(getSize(sizes, branchId), axis.primary);
+      const primaryCoord = axis.sign * (rootPrimarySize / 2 + ROOT_GAP + branchPrimarySize / 2);
+      assignPositions(branchId, direction, primaryCoord, branchCenter, nodes, sizes, extents, positions);
+      cursor += extent + SIBLING_GAP;
+    }
   }
 
   return positions;
