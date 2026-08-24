@@ -46,21 +46,23 @@ export async function renderMapSnapshot(
   document.body.appendChild(container);
 
   const root = createRoot(container);
-  await new Promise<void>((resolve) => {
-    root.render(
-      <ExportFlow
-        nodes={flowNodes}
-        edges={flowEdges}
-        width={pageWidthPx}
-        height={pageHeightPx}
-        viewport={viewport}
-      />,
-    );
-    // Note: requestAnimationFrame never fires on a hidden/backgrounded tab,
-    // so a paint-based wait would hang forever there. A short timer is
-    // enough for React to finish committing the render + layout.
-    setTimeout(resolve, 50);
-  });
+  root.render(
+    <ExportFlow
+      nodes={flowNodes}
+      edges={flowEdges}
+      width={pageWidthPx}
+      height={pageHeightPx}
+      viewport={viewport}
+    />,
+  );
+  // Wait for React to commit + the browser to paint before rasterizing,
+  // so the capture isn't taken mid-layout. requestAnimationFrame never
+  // fires on a hidden/backgrounded tab, hence the fallback timer.
+  const paint = new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  const paintTimeout = new Promise<void>((resolve) => setTimeout(resolve, 300));
+  await Promise.race([paint, paintTimeout]);
   await document.fonts.ready;
 
   try {

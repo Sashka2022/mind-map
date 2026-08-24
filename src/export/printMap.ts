@@ -47,5 +47,16 @@ export async function printMap(flowNodes: Node[], flowEdges: Edge[], page: PageS
   };
   window.addEventListener('afterprint', cleanup, { once: true });
 
+  // window.print() only captures what the browser has already painted, so
+  // the image must be fully decoded and given a chance to paint before
+  // printing — otherwise the print preview/output comes out blank. rAF
+  // never fires on a hidden/backgrounded tab, hence the fallback timeout.
+  const paint = new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  const paintTimeout = new Promise<void>((resolve) => setTimeout(resolve, 300));
+  await img.decode().catch(() => undefined);
+  await Promise.race([paint, paintTimeout]);
+
   window.print();
 }
