@@ -1,3 +1,6 @@
+import type { Bounds } from '../layout/bounds';
+
+export type { Bounds };
 export type PaperSize = 'A4' | 'A3';
 export type Orientation = 'landscape' | 'portrait';
 
@@ -5,13 +8,6 @@ export interface PageSpec {
   paper: PaperSize;
   orientation: Orientation;
   marginMm?: number;
-}
-
-export interface Bounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 export interface FitResult {

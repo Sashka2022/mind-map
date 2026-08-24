@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getNodesBounds } from '@xyflow/react';
 import { useMapStore } from '../store/mapStore';
 import { buildFlowGraph } from '../flowGraph';
+import { symmetrizeBounds } from '../layout/bounds';
 import { renderMapSnapshot } from '../export/snapshot';
 import { printMap } from '../export/printMap';
 import { exportToPdf } from '../export/exportToPdf';
@@ -23,7 +24,13 @@ export function PrintPreviewModal({ onClose }: PrintPreviewModalProps) {
     [nodes, rootId, sizes, positions],
   );
 
-  const bounds = useMemo(() => getNodesBounds(flowNodes), [flowNodes]);
+  // Symmetric around the root (not just the raw content box) so the trunk
+  // stays visually centered even when one branch outgrows its opposite.
+  const bounds = useMemo(() => {
+    const raw = getNodesBounds(flowNodes);
+    const rootCenter = positions[rootId];
+    return rootCenter ? symmetrizeBounds(raw, rootCenter) : raw;
+  }, [flowNodes, positions, rootId]);
   const autoRecommendation = useMemo(() => chooseAutoPage(bounds), [bounds]);
 
   const [paper, setPaper] = useState<PaperSize>(autoRecommendation.paper);
@@ -69,7 +76,7 @@ export function PrintPreviewModal({ onClose }: PrintPreviewModalProps) {
     setPreviewError(null);
     const timer = setTimeout(async () => {
       try {
-        const snapshot = await renderMapSnapshot(flowNodes, flowEdges, { paper, orientation }, 90);
+        const snapshot = await renderMapSnapshot(flowNodes, flowEdges, { paper, orientation }, 90, bounds);
         if (requestId.current === myRequest) {
           setPreviewUrl(snapshot.dataUrl);
         }
@@ -84,13 +91,13 @@ export function PrintPreviewModal({ onClose }: PrintPreviewModalProps) {
     }, 150);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paper, orientation, flowNodes, flowEdges, previewNonce]);
+  }, [paper, orientation, flowNodes, flowEdges, bounds, previewNonce]);
 
   async function handlePrint() {
     setBusy('print');
     setActionError(null);
     try {
-      await printMap(flowNodes, flowEdges, { paper, orientation });
+      await printMap(flowNodes, flowEdges, { paper, orientation }, bounds);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'שגיאה בהכנת ההדפסה');
     } finally {
@@ -102,7 +109,7 @@ export function PrintPreviewModal({ onClose }: PrintPreviewModalProps) {
     setBusy('pdf');
     setActionError(null);
     try {
-      await exportToPdf(flowNodes, flowEdges, { paper, orientation }, `${title || 'מפת-חשיבה'}.pdf`);
+      await exportToPdf(flowNodes, flowEdges, { paper, orientation }, `${title || 'מפת-חשיבה'}.pdf`, bounds);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'שגיאה בייצוא ה-PDF');
     } finally {

@@ -5,6 +5,7 @@ import { useMapStore } from '../store/mapStore';
 import { nodeTypes } from './nodeTypes';
 import { buildFlowGraph } from '../flowGraph';
 import { DEFAULT_NODE_SIZE } from '../layout/treeLayout';
+import { symmetrizeBounds } from '../layout/bounds';
 import type { Point, Size } from '../types';
 
 const FIT_PADDING = 0.25;
@@ -54,8 +55,12 @@ function CanvasInner() {
     settleTimer.current = setTimeout(() => {
       if (isDraggingRef.current) return;
       const container = wrapRef.current;
-      const bounds = computeContentBounds(latestLayout.current.positions, latestLayout.current.sizes);
-      if (!container || !bounds) return;
+      const rawBounds = computeContentBounds(latestLayout.current.positions, latestLayout.current.sizes);
+      const rootCenter = latestLayout.current.positions[rootId];
+      if (!container || !rawBounds) return;
+      // Keep the root visually centered even when one branch is bigger than
+      // its opposite, instead of the view drifting toward the fuller side.
+      const bounds = rootCenter ? symmetrizeBounds(rawBounds, rootCenter) : rawBounds;
       const rect = container.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       const viewport = getViewportForBounds(bounds, rect.width, rect.height, 0.15, 1.5, FIT_PADDING);

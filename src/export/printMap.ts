@@ -1,13 +1,18 @@
 import type { Edge, Node } from '@xyflow/react';
 import { renderMapSnapshot } from './snapshot';
-import type { PageSpec } from './computeFitScale';
+import type { Bounds, PageSpec } from './computeFitScale';
 
 const CONTAINER_ID = 'print-map-root';
 const STYLE_ID = 'print-page-style';
 
 /** Renders a scale-to-fit snapshot and sends it to the browser's print dialog. */
-export async function printMap(flowNodes: Node[], flowEdges: Edge[], page: PageSpec): Promise<void> {
-  const snapshot = await renderMapSnapshot(flowNodes, flowEdges, page, 200);
+export async function printMap(
+  flowNodes: Node[],
+  flowEdges: Edge[],
+  page: PageSpec,
+  bounds?: Bounds,
+): Promise<void> {
+  const snapshot = await renderMapSnapshot(flowNodes, flowEdges, page, 200, bounds);
 
   document.getElementById(CONTAINER_ID)?.remove();
   const container = document.createElement('div');

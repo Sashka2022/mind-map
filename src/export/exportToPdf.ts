@@ -1,15 +1,16 @@
 import jsPDF from 'jspdf';
 import type { Edge, Node } from '@xyflow/react';
 import { renderMapSnapshot } from './snapshot';
-import type { PageSpec } from './computeFitScale';
+import type { Bounds, PageSpec } from './computeFitScale';
 
 export async function exportToPdf(
   flowNodes: Node[],
   flowEdges: Edge[],
   page: PageSpec,
   fileName: string,
+  bounds?: Bounds,
 ): Promise<void> {
-  const snapshot = await renderMapSnapshot(flowNodes, flowEdges, page, 200);
+  const snapshot = await renderMapSnapshot(flowNodes, flowEdges, page, 200, bounds);
 
   const pdf = new jsPDF({
     orientation: page.orientation === 'landscape' ? 'l' : 'p',

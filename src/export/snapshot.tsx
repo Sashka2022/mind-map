@@ -2,7 +2,7 @@ import { toJpeg } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { getNodesBounds, type Edge, type Node } from '@xyflow/react';
 import { ExportFlow } from './ExportFlow';
-import { computeFitScale, type PageSpec } from './computeFitScale';
+import { computeFitScale, type Bounds, type PageSpec } from './computeFitScale';
 
 export interface SnapshotResult {
   dataUrl: string;
@@ -16,14 +16,18 @@ export interface SnapshotResult {
  * Renders the map into an offscreen React Flow instance sized and scaled to
  * exactly fit the given page, then rasterizes it. Used by both the print and
  * PDF-export paths so "scale to fit" only has one implementation.
+ *
+ * `bounds` defaults to the map's raw bounding box, but callers pass in a
+ * root-symmetric box (see layout/bounds.ts) so the root stays centered on
+ * the page even when one branch is bigger than its opposite.
  */
 export async function renderMapSnapshot(
   flowNodes: Node[],
   flowEdges: Edge[],
   page: PageSpec,
   dpi = 180,
+  bounds: Bounds = getNodesBounds(flowNodes),
 ): Promise<SnapshotResult> {
-  const bounds = getNodesBounds(flowNodes);
   const fit = computeFitScale(bounds, page);
 
   const pxPerMm = dpi / 25.4;
