@@ -37,13 +37,22 @@ export async function renderMapSnapshot(
     zoom,
   };
 
+  // html-to-image renders the captured element inside an SVG <foreignObject>;
+  // if the captured element itself has `position: fixed`, that positioning
+  // escapes the foreignObject's coordinate space and the content is drawn
+  // off-canvas, producing a blank capture. So the offscreen positioning goes
+  // on an outer host, and the plain (statically positioned) inner element is
+  // what actually gets passed to toJpeg.
+  const offscreenHost = document.createElement('div');
+  offscreenHost.style.position = 'fixed';
+  offscreenHost.style.left = '-99999px';
+  offscreenHost.style.top = '0';
+  document.body.appendChild(offscreenHost);
+
   const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.left = '-99999px';
-  container.style.top = '0';
   container.style.width = `${pageWidthPx}px`;
   container.style.height = `${pageHeightPx}px`;
-  document.body.appendChild(container);
+  offscreenHost.appendChild(container);
 
   const root = createRoot(container);
   root.render(
@@ -81,6 +90,6 @@ export async function renderMapSnapshot(
     return { dataUrl, pageWidthMm: fit.pageWidthMm, pageHeightMm: fit.pageHeightMm, pageWidthPx, pageHeightPx };
   } finally {
     root.unmount();
-    container.remove();
+    offscreenHost.remove();
   }
 }
