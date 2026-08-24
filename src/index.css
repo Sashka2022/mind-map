@@ -22,12 +22,14 @@
   --dir-up: #d97706;
   --dir-up-bg: #fdf1e0;
 
-  --hl-yellow: #d1a300;
-  --hl-yellow-bg: #fef9e7;
-  --hl-red: #dc2626;
-  --hl-red-bg: #fdecea;
-  --hl-pink: #db2777;
-  --hl-pink-bg: #fce7f3;
+  /* Punchier, candy-like tones — deliberately more playful than the
+     muted/corporate direction palette above, so a highlight actually pops. */
+  --hl-yellow: #f2b705;
+  --hl-yellow-bg: #fff6d8;
+  --hl-red: #ff5252;
+  --hl-red-bg: #ffe3e3;
+  --hl-pink: #ff4fa3;
+  --hl-pink-bg: #ffe1f0;
 
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
 }
