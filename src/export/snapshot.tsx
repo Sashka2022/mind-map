@@ -31,9 +31,15 @@ export async function renderMapSnapshot(
   const pageHeightPx = Math.round(fit.pageHeightMm * pxPerMm);
   const marginPx = Math.round(fit.marginMm * pxPerMm);
   const zoom = fit.scale * (dpi / 96);
+  // The scale is bound by one axis; the other axis is left with slack
+  // (page fully filled edge-to-edge would only happen if the aspect ratios
+  // matched exactly). Split that slack evenly so the map sits centered on
+  // the page instead of pinned to the top-left corner.
+  const slackXPx = Math.max(0, pageWidthPx - 2 * marginPx - fit.contentWidthPx * zoom);
+  const slackYPx = Math.max(0, pageHeightPx - 2 * marginPx - fit.contentHeightPx * zoom);
   const viewport = {
-    x: marginPx + fit.offsetX * zoom,
-    y: marginPx + fit.offsetY * zoom,
+    x: marginPx + slackXPx / 2 + fit.offsetX * zoom,
+    y: marginPx + slackYPx / 2 + fit.offsetY * zoom,
     zoom,
   };
 
