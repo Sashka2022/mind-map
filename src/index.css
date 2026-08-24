@@ -22,6 +22,13 @@
   --dir-up: #d97706;
   --dir-up-bg: #fdf1e0;
 
+  --hl-yellow: #d1a300;
+  --hl-yellow-bg: #fef9e7;
+  --hl-red: #dc2626;
+  --hl-red-bg: #fdecea;
+  --hl-pink: #db2777;
+  --hl-pink-bg: #fce7f3;
+
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
 }
 
@@ -254,6 +261,47 @@ button {
   opacity: 0.75;
 }
 
+/* User-picked emphasis colors — !important because this is a deliberate
+   override that must win over the direction color coding (a 3-class
+   selector like .level-1.dir-right otherwise outranks a 2-class one here)
+   and still show through even once a node is marked done. */
+.mm-node-box.hl-yellow {
+  background: var(--hl-yellow-bg) !important;
+  border-color: var(--hl-yellow) !important;
+}
+.mm-node-box.hl-red {
+  background: var(--hl-red-bg) !important;
+  border-color: var(--hl-red) !important;
+}
+.mm-node-box.hl-pink {
+  background: var(--hl-pink-bg) !important;
+  border-color: var(--hl-pink) !important;
+}
+
+/* The root's own style is white text on a dark gradient; a highlight
+   replaces that gradient with a pale tint, so its text needs to switch
+   back to dark to stay legible. */
+.mm-node-box.root.hl-yellow,
+.mm-node-box.root.hl-red,
+.mm-node-box.root.hl-pink {
+  color: var(--color-text) !important;
+}
+
+.mm-node-box.root.hl-yellow .mm-node-action-btn,
+.mm-node-box.root.hl-red .mm-node-action-btn,
+.mm-node-box.root.hl-pink .mm-node-action-btn {
+  color: var(--color-text-muted);
+}
+
+.mm-node-box.root.hl-yellow .mm-node-inline-actions,
+.mm-node-box.root.hl-red .mm-node-inline-actions,
+.mm-node-box.root.hl-pink .mm-node-inline-actions,
+.mm-node-box.root.hl-yellow .mm-node-colors,
+.mm-node-box.root.hl-red .mm-node-colors,
+.mm-node-box.root.hl-pink .mm-node-colors {
+  border-inline-start-color: rgba(20, 25, 40, 0.1);
+}
+
 .mm-node-input {
   border: none;
   outline: none;
@@ -288,6 +336,50 @@ button {
   background: var(--color-achieved);
   border-color: var(--color-achieved);
   color: #fff;
+}
+
+.mm-node-colors {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-inline-start: 4px;
+  padding-inline-start: 6px;
+  border-inline-start: 1px solid rgba(20, 25, 40, 0.1);
+}
+
+.mm-color-dot {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mm-color-dot:hover {
+  opacity: 0.9;
+  transform: scale(1.15);
+}
+
+.mm-color-dot.active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px currentColor;
+}
+
+.mm-color-dot.yellow {
+  background: var(--hl-yellow);
+  color: var(--hl-yellow);
+}
+.mm-color-dot.red {
+  background: var(--hl-red);
+  color: var(--hl-red);
+}
+.mm-color-dot.pink {
+  background: var(--hl-pink);
+  color: var(--hl-pink);
 }
 
 /* Part of the bubble's own flex row (never absolutely positioned outside
@@ -347,8 +439,13 @@ button {
   color: rgba(255, 255, 255, 0.85);
 }
 
-.mm-node-box.root .mm-node-inline-actions {
+.mm-node-box.root .mm-node-inline-actions,
+.mm-node-box.root .mm-node-colors {
   border-inline-start-color: rgba(255, 255, 255, 0.3);
+}
+
+.mm-node-box.root .mm-color-dot.active {
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 3.5px currentColor;
 }
 
 .react-flow__handle {

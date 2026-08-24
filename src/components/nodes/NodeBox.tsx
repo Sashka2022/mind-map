@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { useNodeSizeReporter } from '../../layout/nodeSizing';
-import { MAX_MAIN_BRANCHES } from '../../types';
+import { HIGHLIGHT_COLOR_LABELS, HIGHLIGHT_COLORS, MAX_MAIN_BRANCHES, type HighlightColor } from '../../types';
 import { useIsExportMode } from '../../export/exportMode';
 
 interface NodeBoxProps {
@@ -15,6 +15,7 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
   const rootId = useMapStore((s) => s.rootId);
   const renameNode = useMapStore((s) => s.renameNode);
   const toggleAchieved = useMapStore((s) => s.toggleAchieved);
+  const setNodeHighlight = useMapStore((s) => s.setNodeHighlight);
   const addChild = useMapStore((s) => s.addChild);
   const addMainBranch = useMapStore((s) => s.addMainBranch);
   const requestDelete = useMapStore((s) => s.requestDelete);
@@ -68,6 +69,10 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
     else addChild(id);
   }
 
+  function onPickColor(color: HighlightColor) {
+    setNodeHighlight(id, node.highlightColor === color ? null : color);
+  }
+
   return (
     <div className="mm-node" ref={boxRef}>
       <div
@@ -75,7 +80,8 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
           'mm-node-box' +
           (isRoot ? ' root' : '') +
           (isLevel1 ? ` level-1 dir-${node.direction ?? 'right'}` : '') +
-          (node.achieved ? ' achieved' : '')
+          (node.achieved ? ' achieved' : '') +
+          (node.highlightColor ? ` hl-${node.highlightColor}` : '')
         }
         onDoubleClick={startEdit}
       >
@@ -121,6 +127,20 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
             overflow:hidden viewport wrapper near a canvas edge — and they
             work identically for mouse and touch since nothing depends on
             hover. */}
+        {!isExport && (
+          <span className="mm-node-colors">
+            {HIGHLIGHT_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={'mm-color-dot nodrag ' + color + (node.highlightColor === color ? ' active' : '')}
+                title={`הדגשה ב${HIGHLIGHT_COLOR_LABELS[color]}`}
+                onClick={() => onPickColor(color)}
+              />
+            ))}
+          </span>
+        )}
+
         {!isExport && (
           <span className="mm-node-inline-actions">
             {canAddMore && (
