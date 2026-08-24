@@ -1,0 +1,491 @@
+:root {
+  --color-bg: #f4f6fb;
+  --color-surface: #ffffff;
+  --color-border: #d7dce5;
+  --color-text: #1f2532;
+  --color-text-muted: #667085;
+  --color-primary: #3457d5;
+  --color-primary-dark: #253ea6;
+  --color-danger: #d64545;
+  --color-achieved: #1f9d55;
+  --color-achieved-bg: #e6f7ec;
+  --shadow-node: 0 2px 6px rgba(20, 25, 40, 0.1), 0 1px 2px rgba(20, 25, 40, 0.07);
+  --shadow-node-hover: 0 8px 20px rgba(20, 25, 40, 0.16), 0 2px 6px rgba(20, 25, 40, 0.1);
+  --shadow-modal: 0 20px 60px rgba(15, 20, 35, 0.25);
+
+  --dir-right: #3457d5;
+  --dir-right-bg: #eef1fd;
+  --dir-left: #9333ea;
+  --dir-left-bg: #f5edfe;
+  --dir-down: #0d9488;
+  --dir-down-bg: #e6f6f4;
+  --dir-up: #d97706;
+  --dir-up-bg: #fdf1e0;
+
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  direction: rtl;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- Onboarding ---------- */
+
+.onboarding {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.onboarding-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-modal);
+  padding: 40px;
+  width: min(420px, 100%);
+  text-align: center;
+}
+
+.onboarding-card h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.onboarding-card p {
+  margin: 0 0 24px;
+  color: var(--color-text-muted);
+}
+
+.onboarding-card input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.onboarding-card input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px clamp(12px, 4vw, 20px);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 10;
+}
+
+.toolbar-title {
+  font-weight: 700;
+  font-size: clamp(14px, 3.5vw, 16px);
+  margin-inline-end: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+}
+
+.toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.toolbar button:hover {
+  background: var(--color-bg);
+}
+
+.toolbar .saved-flash {
+  color: var(--color-achieved);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Canvas ---------- */
+
+.canvas-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Nodes ---------- */
+
+.mm-node {
+  position: relative;
+  /* React Flow sets pointer-events:none on non-selectable/non-draggable
+     node wrappers (which we intentionally are, since we manage all
+     interaction ourselves) — re-enable it here so our own buttons/inputs
+     inside the bubble are actually clickable. */
+  pointer-events: auto;
+}
+
+.mm-node-box {
+  width: max-content;
+  border-radius: 14px;
+  padding: 11px 18px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  box-shadow: var(--shadow-node);
+  min-width: 64px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.mm-node:hover .mm-node-box {
+  box-shadow: var(--shadow-node-hover);
+  transform: translateY(-1px);
+}
+
+.mm-node-box.root {
+  background: linear-gradient(135deg, #4a6bf0 0%, var(--color-primary) 55%, #7b3fe4 120%);
+  border-color: transparent;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 18px 30px;
+  box-shadow: 0 10px 26px rgba(52, 87, 213, 0.35), 0 2px 6px rgba(52, 87, 213, 0.25);
+}
+
+.mm-node-box.level-1 {
+  font-weight: 700;
+  font-size: 15px;
+  border-width: 2px;
+  border-radius: 16px;
+}
+
+.mm-node-box.level-1.dir-right {
+  border-color: var(--dir-right);
+  background: var(--dir-right-bg);
+  color: var(--color-text);
+}
+.mm-node-box.level-1.dir-left {
+  border-color: var(--dir-left);
+  background: var(--dir-left-bg);
+}
+.mm-node-box.level-1.dir-down {
+  border-color: var(--dir-down);
+  background: var(--dir-down-bg);
+}
+.mm-node-box.level-1.dir-up {
+  border-color: var(--dir-up);
+  background: var(--dir-up-bg);
+}
+
+.mm-node-box.achieved {
+  background: var(--color-achieved-bg);
+  border-color: var(--color-achieved);
+}
+
+.mm-node-text {
+  white-space: nowrap;
+}
+
+.mm-node-box.achieved .mm-node-text {
+  text-decoration: line-through;
+  color: var(--color-achieved);
+  opacity: 0.75;
+}
+
+.mm-node-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  text-align: center;
+  color: inherit;
+  min-width: 60px;
+}
+
+.mm-achieved-toggle {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--color-text-muted);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.mm-achieved-toggle:hover {
+  border-color: var(--color-achieved);
+  transform: scale(1.08);
+}
+
+.mm-achieved-toggle.checked {
+  background: var(--color-achieved);
+  border-color: var(--color-achieved);
+  color: #fff;
+}
+
+/* Part of the bubble's own flex row (never absolutely positioned outside
+   it) so they can never be clipped by React Flow's overflow:hidden viewport
+   wrapper near a canvas edge, and work identically for mouse and touch. */
+.mm-node-inline-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-inline-start: 4px;
+  padding-inline-start: 6px;
+  border-inline-start: 1px solid rgba(20, 25, 40, 0.1);
+}
+
+.mm-node-action-btn {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  padding: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.mm-node-action-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.mm-node-action-btn.add {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.mm-node-action-btn.add:hover {
+  background: var(--dir-right-bg);
+}
+
+.mm-node-action-btn.delete:hover {
+  background: #fbe4e4;
+  color: var(--color-danger);
+}
+
+.mm-node-action-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.mm-node-box.root .mm-node-action-btn {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mm-node-box.root .mm-node-inline-actions {
+  border-inline-start-color: rgba(255, 255, 255, 0.3);
+}
+
+.react-flow__handle {
+  opacity: 0;
+}
+
+/* ---------- Modals ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 25, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-modal);
+  padding: 28px;
+  width: min(460px, 92vw);
+}
+
+.modal-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.modal-card p {
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-actions button {
+  width: auto;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- Print preview ---------- */
+
+.print-modal .modal-card {
+  width: min(720px, 94vw);
+}
+
+.print-options {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.print-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.print-option-group legend {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.print-option-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.print-preview-frame {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #eef1f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.print-preview-frame img {
+  max-width: 100%;
+  max-height: 320px;
+  box-shadow: 0 4px 16px rgba(20, 25, 40, 0.18);
+  background: #fff;
+}
+
+.print-preview-loading {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.print-preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-danger);
+  font-size: 14px;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.print-action-error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin: -8px 0 12px;
+  text-align: center;
+}
