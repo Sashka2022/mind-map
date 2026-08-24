@@ -3,7 +3,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { applyOverrides, computeLayout } from '../layout/treeLayout';
 import { estimateSize } from '../layout/nodeSizing';
-import { ALL_DIRECTIONS, MAX_MAIN_BRANCHES, type Direction, type MapNode, type Point, type Size } from '../types';
+import {
+  ALL_DIRECTIONS,
+  MAX_MAIN_BRANCHES,
+  type Direction,
+  type HighlightColor,
+  type MapNode,
+  type Point,
+  type Size,
+} from '../types';
 
 interface MapState {
   initialized: boolean;
@@ -27,6 +35,7 @@ interface MapState {
   addChild: (parentId: string) => void;
   renameNode: (id: string, text: string) => void;
   toggleAchieved: (id: string) => void;
+  setNodeHighlight: (id: string, color: HighlightColor | null) => void;
   deleteNode: (id: string) => void;
   countDescendants: (id: string) => number;
   setNodeSize: (id: string, size: Size) => void;
@@ -136,12 +145,19 @@ export const useMapStore = create<MapState>()(
 
         const id = nanoid(8);
         const text = 'ענף חדש';
+        // Start at the previous sibling's size (if any) instead of the
+        // placeholder text's heuristic estimate, so the new branch opens at
+        // the same distance from the root as the one before it — it still
+        // resizes itself once the user types a real name (useNodeSizeReporter)
+        // and can always be dragged/relayout-carried like any other node.
+        const lastSiblingId = root.children[root.children.length - 1];
+        const initialSize = (lastSiblingId && sizes[lastSiblingId]) || estimateSize(text);
         const nextNodes: Record<string, MapNode> = {
           ...nodes,
           [id]: makeNode({ id, text, parentId: rootId, direction }),
           [rootId]: { ...root, children: [...root.children, id] },
         };
-        const nextSizes = { ...sizes, [id]: estimateSize(text) };
+        const nextSizes = { ...sizes, [id]: initialSize };
         const { autoPositions, positions } = relayoutAll(nextNodes, rootId, nextSizes, overrides);
         set({ nodes: nextNodes, sizes: nextSizes, autoPositions, positions, editRequestId: id });
       },
@@ -153,12 +169,17 @@ export const useMapStore = create<MapState>()(
 
         const id = nanoid(8);
         const text = 'נושא חדש';
+        // Same reasoning as addMainBranch: default to the previous sibling's
+        // size so the new node opens at a consistent distance from its
+        // parent, while remaining fully movable/resizable afterward.
+        const lastSiblingId = parent.children[parent.children.length - 1];
+        const initialSize = (lastSiblingId && sizes[lastSiblingId]) || estimateSize(text);
         const nextNodes: Record<string, MapNode> = {
           ...nodes,
           [id]: makeNode({ id, text, parentId }),
           [parentId]: { ...parent, children: [...parent.children, id] },
         };
-        const nextSizes = { ...sizes, [id]: estimateSize(text) };
+        const nextSizes = { ...sizes, [id]: initialSize };
         const { autoPositions, positions } = relayoutAll(nextNodes, rootId, nextSizes, overrides);
         set({ nodes: nextNodes, sizes: nextSizes, autoPositions, positions, editRequestId: id });
       },
@@ -178,6 +199,13 @@ export const useMapStore = create<MapState>()(
         const node = nodes[id];
         if (!node || node.parentId === null) return;
         set({ nodes: { ...nodes, [id]: { ...node, achieved: !node.achieved } } });
+      },
+
+      setNodeHighlight: (id, color) => {
+        const { nodes } = get();
+        const node = nodes[id];
+        if (!node) return;
+        set({ nodes: { ...nodes, [id]: { ...node, highlightColor: color ?? undefined } } });
       },
 
       countDescendants: (id) => {
