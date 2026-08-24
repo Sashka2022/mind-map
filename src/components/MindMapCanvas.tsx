@@ -133,7 +133,7 @@ function CanvasInner() {
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background gap={24} color="#dde2ec" />
+        <Background gap={24} size={1.6} color="#c9bce6" />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
     </div>
