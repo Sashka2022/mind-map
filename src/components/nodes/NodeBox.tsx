@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { useNodeSizeReporter } from '../../layout/nodeSizing';
-import { HIGHLIGHT_COLOR_LABELS, HIGHLIGHT_COLORS, type HighlightColor } from '../../types';
+import { getInheritedBranchColor } from '../../layout/branchColor';
 import { useIsExportMode } from '../../export/exportMode';
 
 interface NodeBoxProps {
@@ -14,9 +14,10 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
   const size = useMapStore((s) => s.sizes[id]);
   const rootId = useMapStore((s) => s.rootId);
   const photoUrl = useMapStore((s) => s.photoUrl);
+  const branchColor = useMapStore((s) => getInheritedBranchColor(s.nodes, s.rootId, id));
   const renameNode = useMapStore((s) => s.renameNode);
   const toggleAchieved = useMapStore((s) => s.toggleAchieved);
-  const setNodeHighlight = useMapStore((s) => s.setNodeHighlight);
+  const toggleHighlight = useMapStore((s) => s.toggleHighlight);
   const addChild = useMapStore((s) => s.addChild);
   const addMainBranch = useMapStore((s) => s.addMainBranch);
   const requestDelete = useMapStore((s) => s.requestDelete);
@@ -44,6 +45,7 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
   if (!node) return null;
 
   const isLevel1 = node.parentId === rootId;
+  const isDeep = !isRoot && !isLevel1;
 
   function startEdit() {
     if (isExport) return;
@@ -69,20 +71,18 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
     else addChild(id);
   }
 
-  function onPickColor(color: HighlightColor) {
-    setNodeHighlight(id, node.highlightColor === color ? null : color);
-  }
-
   return (
     <div className="mm-node" ref={boxRef}>
       <div
         className={
           'mm-node-box' +
           (isRoot ? ' root' : '') +
-          (isLevel1 ? ` level-1 dir-${node.direction ?? 'right'}` : '') +
+          (isLevel1 ? ' level-1' : '') +
+          (isDeep ? ' leaf' : '') +
           (node.achieved ? ' achieved' : '') +
-          (node.highlightColor ? ` hl-${node.highlightColor}` : '')
+          (node.highlighted ? ' highlighted' : '')
         }
+        style={isRoot ? undefined : ({ '--branch-color': branchColor } as CSSProperties)}
         onDoubleClick={startEdit}
       >
         {isRoot && photoUrl && <img className="mm-root-avatar" src={photoUrl} alt="" />}
@@ -130,23 +130,24 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
             work identically for mouse and touch since nothing depends on
             hover. */}
         {!isExport && (
-          <span className="mm-node-colors">
-            {HIGHLIGHT_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={'mm-color-dot nodrag ' + color + (node.highlightColor === color ? ' active' : '')}
-                title={`הדגשה ב${HIGHLIGHT_COLOR_LABELS[color]}`}
-                onClick={() => onPickColor(color)}
-              />
-            ))}
-          </span>
-        )}
-
-        {!isExport && (
           <span className="mm-node-inline-actions">
+            <button
+              type="button"
+              className={'mm-node-action-btn highlight nodrag' + (node.highlighted ? ' active' : '')}
+              title={node.highlighted ? 'הסר הדגשה' : 'הדגש ענף'}
+              onClick={() => toggleHighlight(id)}
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                <path
+                  d="M8 1.6l1.85 3.92 4.32.58-3.15 2.98.78 4.32L8 11.35l-3.8 2.05.78-4.32-3.15-2.98 4.32-.58L8 1.6z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
             <button type="button" className="mm-node-action-btn add nodrag" title="הוסף ענף" onClick={onAdd}>
-              +
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              </svg>
             </button>
             {!isRoot && (
               <button
@@ -155,7 +156,14 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
                 title="מחק ענף"
                 onClick={() => requestDelete(id)}
               >
-                ✕
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                  <path
+                    d="M3.2 3.2l9.6 9.6M12.8 3.2l-9.6 9.6"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
             )}
           </span>
