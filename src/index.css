@@ -347,45 +347,20 @@ button {
 }
 
 /* ---------- Main branches: cloud shapes, one color per branch ---------- */
-/* Two blob "puffs" (::before/::after) sit behind a pill-shaped body, sharing
-   its background/border so the seams blend into one soft cloud silhouette —
-   a deliberately organic alternative to the plain rounded rectangle below. */
+/* One continuous asymmetric border-radius blob — a single outline, so unlike
+   a separate overlapping shape (e.g. a puff pseudo-element with its own
+   border) there's no seam where two outlines could cross. Reads as a soft
+   organic cloud instead of the plain rounded rectangle used elsewhere. */
 .mm-node-box.level-1 {
-  position: relative;
-  isolation: isolate;
   font-weight: 700;
   font-size: 15px;
   border-width: 2.5px;
   border-style: solid;
-  border-radius: 999px;
+  border-radius: 40% 60% 57% 43% / 62% 48% 52% 38%;
   border-color: var(--branch-color);
   background: color-mix(in srgb, var(--branch-color) 13%, #fff);
   color: var(--color-text);
-  padding: 15px 28px;
-}
-
-.mm-node-box.level-1::before,
-.mm-node-box.level-1::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  background: inherit;
-  border: inherit;
-  border-radius: 50%;
-}
-
-.mm-node-box.level-1::before {
-  width: 42%;
-  height: 76%;
-  top: -32%;
-  right: 10%;
-}
-
-.mm-node-box.level-1::after {
-  width: 34%;
-  height: 62%;
-  top: -22%;
-  left: 14%;
+  padding: 16px 30px;
 }
 
 /* ---------- Sub-branches: text written directly on the branch line ---------- */
