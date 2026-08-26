@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { applyOverrides, computeLayout } from '../layout/treeLayout';
 import { estimateSize } from '../layout/nodeSizing';
-import { ALL_DIRECTIONS, type Direction, type HighlightColor, type MapNode, type Point, type Size } from '../types';
+import { ALL_DIRECTIONS, type Direction, type MapNode, type Point, type Size } from '../types';
 
 interface MapState {
   initialized: boolean;
@@ -31,13 +31,15 @@ interface MapState {
   addChild: (parentId: string) => void;
   renameNode: (id: string, text: string) => void;
   toggleAchieved: (id: string) => void;
-  setNodeHighlight: (id: string, color: HighlightColor | null) => void;
+  toggleHighlight: (id: string) => void;
   deleteNode: (id: string) => void;
   countDescendants: (id: string) => number;
   setNodeSize: (id: string, size: Size) => void;
   setNodeOverride: (id: string, point: Point) => void;
   resetLayout: () => void;
   relayout: () => void;
+  /** Migrates maps saved before the 3-color highlightColor field became a single `highlighted` toggle. */
+  migrateLegacyHighlights: () => void;
   saveNow: () => void;
   requestDelete: (id: string) => void;
   cancelDelete: () => void;
@@ -210,11 +212,11 @@ export const useMapStore = create<MapState>()(
         set({ nodes: { ...nodes, [id]: { ...node, achieved: !node.achieved } } });
       },
 
-      setNodeHighlight: (id, color) => {
+      toggleHighlight: (id) => {
         const { nodes } = get();
         const node = nodes[id];
         if (!node) return;
-        set({ nodes: { ...nodes, [id]: { ...node, highlightColor: color ?? undefined } } });
+        set({ nodes: { ...nodes, [id]: { ...node, highlighted: !node.highlighted } } });
       },
 
       countDescendants: (id) => {
@@ -275,6 +277,23 @@ export const useMapStore = create<MapState>()(
         set({ autoPositions, positions });
       },
 
+      migrateLegacyHighlights: () => {
+        const { nodes } = get();
+        let migrated = false;
+        const nextNodes: Record<string, MapNode> = {};
+        for (const [nodeId, node] of Object.entries(nodes)) {
+          const legacyColor = (node as MapNode & { highlightColor?: string }).highlightColor;
+          if (legacyColor) {
+            migrated = true;
+            const { highlightColor: _drop, ...rest } = node as MapNode & { highlightColor?: string };
+            nextNodes[nodeId] = { ...rest, highlighted: true };
+          } else {
+            nextNodes[nodeId] = node;
+          }
+        }
+        if (migrated) set({ nodes: nextNodes });
+      },
+
       saveNow: () => set({ lastSavedAt: Date.now() }),
 
       requestDelete: (id) => {
@@ -323,6 +342,7 @@ export const useMapStore = create<MapState>()(
         overrides: state.overrides,
       }),
       onRehydrateStorage: () => (state) => {
+        state?.migrateLegacyHighlights();
         state?.relayout();
       },
     },

@@ -2,16 +2,24 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export const ALL_DIRECTIONS: Direction[] = ['right', 'left', 'down', 'up'];
 
-/** Optional visual emphasis the user can put on any node, independent of level/direction. */
-export type HighlightColor = 'yellow' | 'red' | 'pink';
-
-export const HIGHLIGHT_COLORS: HighlightColor[] = ['yellow', 'red', 'pink'];
-
-export const HIGHLIGHT_COLOR_LABELS: Record<HighlightColor, string> = {
-  yellow: 'צהוב',
-  red: 'אדום',
-  pink: 'ורוד',
-};
+/**
+ * Each main branch (a direct child of the root) gets its own color from this
+ * palette, picked by its order among the root's children — independent of
+ * the 4-way layout direction, so branch identity keeps scaling even once
+ * there are more branches than directions. Every descendant inherits its
+ * branch's color (see layout/branchColor.ts) so a whole branch reads as one
+ * color family, root to leaf.
+ */
+export const BRANCH_COLORS = [
+  '#315dfb',
+  '#e0468a',
+  '#14b8a6',
+  '#f97316',
+  '#9d4edd',
+  '#2fa84f',
+  '#eab308',
+  '#0891b2',
+];
 
 export interface MapNode {
   id: string;
@@ -21,8 +29,8 @@ export interface MapNode {
   achieved: boolean;
   /** Only set on level-1 nodes (direct children of the root). */
   direction?: Direction;
-  /** User-chosen emphasis color, e.g. to flag an important topic. */
-  highlightColor?: HighlightColor;
+  /** User-toggled emphasis, rendered in the node's own inherited branch color. */
+  highlighted?: boolean;
 }
 
 export interface Size {

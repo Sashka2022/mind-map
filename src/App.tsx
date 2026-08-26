@@ -3,6 +3,7 @@ import { useMapStore } from './store/mapStore';
 import { Onboarding } from './components/Onboarding';
 import { Toolbar } from './components/Toolbar';
 import { MindMapCanvas } from './components/MindMapCanvas';
+import { SidePhotoPanel } from './components/SidePhotoPanel';
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog';
 import { ConfirmResetDialog } from './components/ConfirmResetDialog';
 import { PrintPreviewModal } from './components/PrintPreviewModal';
@@ -16,6 +17,7 @@ function App() {
   return (
     <div className="app">
       <Toolbar onOpenPrint={() => setPrintOpen(true)} />
+      <SidePhotoPanel />
       <MindMapCanvas />
       <ConfirmDeleteDialog />
       <ConfirmResetDialog />

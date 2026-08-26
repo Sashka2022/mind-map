@@ -13,27 +13,14 @@
   --shadow-node-hover: 0 8px 20px rgba(20, 25, 40, 0.16), 0 2px 6px rgba(20, 25, 40, 0.1);
   --shadow-modal: 0 20px 60px rgba(15, 20, 35, 0.25);
 
-  /* Punchier than a typical corporate palette on purpose — this is a
-     personal mind-mapping tool, not a dashboard. */
+  /* Only the root's own gradient still uses these two; every branch's real
+     color now comes from --branch-color (types.ts BRANCH_COLORS), set
+     per-node in NodeBox so a whole branch — cloud, line and leaves — shares
+     one color identity. */
   --dir-right: #315dfb;
-  --dir-right-bg: #e8edff;
   --dir-left: #9d4edd;
-  --dir-left-bg: #f2e8ff;
-  --dir-down: #14b8a6;
-  --dir-down-bg: #dff7f4;
-  --dir-up: #f97316;
-  --dir-up-bg: #ffedd9;
 
   --canvas-bg-gradient: linear-gradient(135deg, #fef3e2 0%, #eef1fd 45%, #fbe8fb 100%);
-
-  /* Punchier, candy-like tones — deliberately more playful than the
-     muted/corporate direction palette above, so a highlight actually pops. */
-  --hl-yellow: #f2b705;
-  --hl-yellow-bg: #fff6d8;
-  --hl-red: #ff5252;
-  --hl-red-bg: #ffe3e3;
-  --hl-pink: #ff4fa3;
-  --hl-pink-bg: #ffe1f0;
 
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
 }
@@ -208,27 +195,96 @@ button {
   max-width: 60vw;
 }
 
-.toolbar button {
+.toolbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px 14px;
+  gap: 7px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 9px;
+  padding: 8px 16px;
   font-size: 14px;
+  font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.toolbar button:hover {
+.toolbar-btn:hover {
   background: var(--color-bg);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn.primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.toolbar-btn.primary:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.toolbar-btn.danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, var(--color-border));
+}
+
+.toolbar-btn.danger:hover {
+  background: #fbe4e4;
+  border-color: var(--color-danger);
 }
 
 .toolbar .saved-flash {
   color: var(--color-achieved);
   font-size: 13px;
   font-weight: 600;
+}
+
+/* ---------- Side photo panel ---------- */
+
+.mm-side-photo {
+  position: fixed;
+  top: 74px;
+  right: 16px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-node-hover);
+  padding: 10px;
+  width: 92px;
+  pointer-events: none;
+}
+
+.mm-side-photo img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-bg);
+}
+
+.mm-side-photo-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .mm-side-photo {
+    display: none;
+  }
 }
 
 /* ---------- Canvas ---------- */
@@ -290,34 +346,74 @@ button {
   border: 2px solid rgba(255, 255, 255, 0.85);
 }
 
+/* ---------- Main branches: cloud shapes, one color per branch ---------- */
+/* Two blob "puffs" (::before/::after) sit behind a pill-shaped body, sharing
+   its background/border so the seams blend into one soft cloud silhouette —
+   a deliberately organic alternative to the plain rounded rectangle below. */
 .mm-node-box.level-1 {
+  position: relative;
+  isolation: isolate;
   font-weight: 700;
   font-size: 15px;
-  border-width: 2px;
-  border-radius: 16px;
+  border-width: 2.5px;
+  border-style: solid;
+  border-radius: 999px;
+  border-color: var(--branch-color);
+  background: color-mix(in srgb, var(--branch-color) 13%, #fff);
+  color: var(--color-text);
+  padding: 15px 28px;
 }
 
-.mm-node-box.level-1.dir-right {
-  border-color: var(--dir-right);
-  background: var(--dir-right-bg);
-  color: var(--color-text);
+.mm-node-box.level-1::before,
+.mm-node-box.level-1::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  background: inherit;
+  border: inherit;
+  border-radius: 50%;
 }
-.mm-node-box.level-1.dir-left {
-  border-color: var(--dir-left);
-  background: var(--dir-left-bg);
+
+.mm-node-box.level-1::before {
+  width: 42%;
+  height: 76%;
+  top: -32%;
+  right: 10%;
 }
-.mm-node-box.level-1.dir-down {
-  border-color: var(--dir-down);
-  background: var(--dir-down-bg);
+
+.mm-node-box.level-1::after {
+  width: 34%;
+  height: 62%;
+  top: -22%;
+  left: 14%;
 }
-.mm-node-box.level-1.dir-up {
-  border-color: var(--dir-up);
-  background: var(--dir-up-bg);
+
+/* ---------- Sub-branches: text written directly on the branch line ---------- */
+.mm-node-box.leaf {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 3px 4px 5px;
+  border-radius: 4px;
+  border-bottom: 2.5px solid var(--branch-color);
+  color: var(--branch-color);
+  font-weight: 600;
+}
+
+.mm-node:hover .mm-node-box.leaf {
+  box-shadow: none;
+  transform: none;
+  background: color-mix(in srgb, var(--branch-color) 8%, transparent);
 }
 
 .mm-node-box.achieved {
   background: var(--color-achieved-bg);
   border-color: var(--color-achieved);
+}
+
+.mm-node-box.leaf.achieved {
+  background: transparent;
+  border-bottom-color: var(--color-achieved);
 }
 
 .mm-node-text {
@@ -330,45 +426,23 @@ button {
   opacity: 0.75;
 }
 
-/* User-picked emphasis colors — !important because this is a deliberate
-   override that must win over the direction color coding (a 3-class
-   selector like .level-1.dir-right otherwise outranks a 2-class one here)
-   and still show through even once a node is marked done. */
-.mm-node-box.hl-yellow {
-  background: var(--hl-yellow-bg) !important;
-  border-color: var(--hl-yellow) !important;
-}
-.mm-node-box.hl-red {
-  background: var(--hl-red-bg) !important;
-  border-color: var(--hl-red) !important;
-}
-.mm-node-box.hl-pink {
-  background: var(--hl-pink-bg) !important;
-  border-color: var(--hl-pink) !important;
+/* A single user-toggled emphasis, always rendered in the node's own
+   inherited branch color rather than a separate fixed palette. The root
+   keeps its own gradient/white-text look (see .root.highlighted below) so
+   this never touches it. */
+.mm-node-box.highlighted:not(.root) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--branch-color) 45%, transparent), var(--shadow-node);
+  background: color-mix(in srgb, var(--branch-color) 24%, #fff);
 }
 
-/* The root's own style is white text on a dark gradient; a highlight
-   replaces that gradient with a pale tint, so its text needs to switch
-   back to dark to stay legible. */
-.mm-node-box.root.hl-yellow,
-.mm-node-box.root.hl-red,
-.mm-node-box.root.hl-pink {
-  color: var(--color-text) !important;
+.mm-node-box.leaf.highlighted {
+  background: color-mix(in srgb, var(--branch-color) 16%, transparent);
+  border-radius: 8px;
+  padding: 4px 9px 6px;
 }
 
-.mm-node-box.root.hl-yellow .mm-node-action-btn,
-.mm-node-box.root.hl-red .mm-node-action-btn,
-.mm-node-box.root.hl-pink .mm-node-action-btn {
-  color: var(--color-text-muted);
-}
-
-.mm-node-box.root.hl-yellow .mm-node-inline-actions,
-.mm-node-box.root.hl-red .mm-node-inline-actions,
-.mm-node-box.root.hl-pink .mm-node-inline-actions,
-.mm-node-box.root.hl-yellow .mm-node-colors,
-.mm-node-box.root.hl-red .mm-node-colors,
-.mm-node-box.root.hl-pink .mm-node-colors {
-  border-inline-start-color: rgba(20, 25, 40, 0.1);
+.mm-node-box.root.highlighted {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55), 0 10px 26px rgba(49, 93, 251, 0.35);
 }
 
 .mm-node-input {
@@ -407,50 +481,6 @@ button {
   color: #fff;
 }
 
-.mm-node-colors {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-inline-start: 4px;
-  padding-inline-start: 6px;
-  border-inline-start: 1px solid rgba(20, 25, 40, 0.1);
-}
-
-.mm-color-dot {
-  width: 13px;
-  height: 13px;
-  flex: none;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.mm-color-dot:hover {
-  opacity: 0.9;
-  transform: scale(1.15);
-}
-
-.mm-color-dot.active {
-  opacity: 1;
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px currentColor;
-}
-
-.mm-color-dot.yellow {
-  background: var(--hl-yellow);
-  color: var(--hl-yellow);
-}
-.mm-color-dot.red {
-  background: var(--hl-red);
-  color: var(--hl-red);
-}
-.mm-color-dot.pink {
-  background: var(--hl-pink);
-  color: var(--hl-pink);
-}
-
 /* Part of the bubble's own flex row (never absolutely positioned outside
    it) so they can never be clipped by React Flow's overflow:hidden viewport
    wrapper near a canvas edge, and work identically for mouse and touch. */
@@ -462,41 +492,64 @@ button {
   border-inline-start: 1px solid rgba(20, 25, 40, 0.1);
 }
 
+/* Always shown with a faint background circle (not just on hover) so the
+   controls stay discoverable on touch devices too — clarity over minimalism. */
 .mm-node-action-btn {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex: none;
   border-radius: 50%;
   border: none;
-  background: transparent;
+  background: rgba(20, 25, 40, 0.06);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   line-height: 1;
   color: var(--color-text-muted);
-  opacity: 0.55;
+  opacity: 0.8;
   padding: 0;
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .mm-node-action-btn:hover {
   opacity: 1;
-  transform: scale(1.1);
+  transform: scale(1.12);
 }
 
 .mm-node-action-btn.add {
   color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   font-weight: 700;
 }
 
 .mm-node-action-btn.add:hover {
-  background: var(--dir-right-bg);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.mm-node-action-btn.delete {
+  background: rgba(214, 69, 69, 0.1);
 }
 
 .mm-node-action-btn.delete:hover {
   background: #fbe4e4;
   color: var(--color-danger);
+}
+
+.mm-node-action-btn.highlight {
+  color: var(--branch-color, var(--color-text-muted));
+  background: color-mix(in srgb, var(--branch-color, transparent) 12%, transparent);
+}
+
+.mm-node-action-btn.highlight:hover {
+  background: color-mix(in srgb, var(--branch-color, transparent) 24%, transparent);
+}
+
+.mm-node-action-btn.highlight.active {
+  opacity: 1;
+  background: var(--branch-color);
+  color: #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--branch-color) 40%, transparent);
 }
 
 .mm-node-action-btn:disabled {
@@ -505,16 +558,17 @@ button {
 }
 
 .mm-node-box.root .mm-node-action-btn {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-.mm-node-box.root .mm-node-inline-actions,
-.mm-node-box.root .mm-node-colors {
+.mm-node-box.root .mm-node-action-btn.highlight.active {
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.mm-node-box.root .mm-node-inline-actions {
   border-inline-start-color: rgba(255, 255, 255, 0.3);
-}
-
-.mm-node-box.root .mm-color-dot.active {
-  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 3.5px currentColor;
 }
 
 .react-flow__handle {

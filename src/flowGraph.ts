@@ -1,6 +1,7 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { MapNode, Point, Size } from './types';
 import { DEFAULT_NODE_SIZE } from './layout/treeLayout';
+import { getInheritedBranchColor } from './layout/branchColor';
 import { rootSourceHandleId } from './components/nodes/RootNode';
 import { BRANCH_SOURCE_HANDLE, BRANCH_TARGET_HANDLE } from './components/nodes/BranchNode';
 
@@ -60,6 +61,9 @@ export function buildFlowGraph(
       // Branches taper like real ones: thicker near the trunk, finer toward the leaves.
       const depth = computeDepth(nodes, node.id, depthCache);
       const strokeWidth = Math.max(1.75, 5 - depth * 0.75);
+      // Every edge takes on its branch's color, so a whole branch — line and
+      // nodes alike — reads as one consistent color from root to leaf.
+      const stroke = getInheritedBranchColor(nodes, rootId, node.id);
 
       flowEdges.push({
         id: `e-${node.parentId}-${node.id}`,
@@ -69,7 +73,7 @@ export function buildFlowGraph(
         targetHandle: BRANCH_TARGET_HANDLE,
         type: 'default',
         pathOptions: { curvature: 0.45 },
-        style: { stroke: '#a3acc2', strokeWidth, strokeLinecap: 'round' },
+        style: { stroke, strokeWidth, strokeLinecap: 'round', opacity: 0.75 },
       });
     }
   }
