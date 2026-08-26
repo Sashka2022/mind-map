@@ -1,4 +1,4 @@
-import { toJpeg } from 'html-to-image';
+import { toSvg } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { getNodesBounds, type Edge, type Node } from '@xyflow/react';
 import { ExportFlow } from './ExportFlow';
@@ -52,7 +52,7 @@ export async function renderMapSnapshot(
   // escapes the foreignObject's coordinate space and the content is drawn
   // off-canvas, producing a blank capture. So the offscreen positioning goes
   // on an outer host, and the plain (statically positioned) inner element is
-  // what actually gets passed to toJpeg.
+  // what actually gets passed to toSvg.
   const offscreenHost = document.createElement('div');
   offscreenHost.style.position = 'fixed';
   offscreenHost.style.left = '-99999px';
@@ -85,18 +85,44 @@ export async function renderMapSnapshot(
   await document.fonts.ready;
 
   try {
-    const capture = toJpeg(container, {
-      width: pageWidthPx,
-      height: pageHeightPx,
-      pixelRatio: 1,
-      backgroundColor: '#ffffff',
-      quality: 0.92,
-      filter: (el) => !(el instanceof Element && el.classList?.contains('react-flow__attribution')),
-    });
+    const rasterize = async () => {
+      // html-to-image's own toJpeg/toPng draw the intermediate SVG to a
+      // canvas internally right after the image's load event — but a
+      // nested <svg> (React Flow draws every connecting line inside one,
+      // positioned via `overflow: visible` rather than its own width/
+      // height) doesn't reliably finish painting inside that image by the
+      // time `load` fires, so every edge silently vanished from the
+      // snapshot even though the serialized SVG itself was correct (a
+      // plain <img src="that data URL"> shows the edges fine). Doing the
+      // draw ourselves, with an explicit settle delay after decode, avoids
+      // that race.
+      const svgUrl = await toSvg(container, {
+        width: pageWidthPx,
+        height: pageHeightPx,
+        backgroundColor: '#ffffff',
+        filter: (el) => !(el instanceof Element && el.classList?.contains('react-flow__attribution')),
+      });
+      const img = new Image();
+      img.src = svgUrl;
+      await img.decode().catch(() => undefined);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pageWidthPx;
+      canvas.height = pageHeightPx;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('לא ניתן היה ליצור קנבס לרינדור התמונה');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, pageWidthPx, pageHeightPx);
+      return canvas.toDataURL('image/jpeg', 0.92);
+    };
+
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('יצירת התמונה נמשכה זמן רב מדי')), 20000);
     });
-    const dataUrl = await Promise.race([capture, timeout]);
+    const dataUrl = await Promise.race([rasterize(), timeout]);
     return { dataUrl, pageWidthMm: fit.pageWidthMm, pageHeightMm: fit.pageHeightMm, pageWidthPx, pageHeightPx };
   } finally {
     root.unmount();

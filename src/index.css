@@ -467,6 +467,14 @@ button {
   border-inline-start: 1px solid rgba(20, 25, 40, 0.1);
 }
 
+/* Export/print snapshot: kept in the layout (same reserved width as live)
+   but not shown, so the printed node isn't left wider than its own content
+   with unexplained slack where the buttons used to be. */
+.mm-invisible {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Always shown with a faint background circle (not just on hover) so the
    controls stay discoverable on touch devices too — clarity over minimalism. */
 .mm-node-action-btn {
@@ -608,6 +616,28 @@ button {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-whatsapp:hover {
+  background: #1fb958;
+}
+
+.btn-whatsapp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ---------- Print preview ---------- */

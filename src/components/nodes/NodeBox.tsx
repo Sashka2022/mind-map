@@ -128,46 +128,48 @@ export function NodeBox({ id, isRoot = false }: NodeBoxProps) {
             outside it), so these can never be clipped by React Flow's
             overflow:hidden viewport wrapper near a canvas edge — and they
             work identically for mouse and touch since nothing depends on
-            hover. */}
-        {!isExport && (
-          <span className="mm-node-inline-actions">
+            hover. Kept in the export snapshot too (just made invisible,
+            never unmounted) so the box keeps the exact width it was
+            measured at live — dropping them outright would leave the
+            printed/saved node narrower than its forced width, showing up
+            as unexplained slack/centering that doesn't match the screen. */}
+        <span className={'mm-node-inline-actions' + (isExport ? ' mm-invisible' : '')}>
+          <button
+            type="button"
+            className={'mm-node-action-btn highlight nodrag' + (node.highlighted ? ' active' : '')}
+            title={node.highlighted ? 'הסר הדגשה' : 'הדגש ענף'}
+            onClick={() => toggleHighlight(id)}
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path
+                d="M8 1.6l1.85 3.92 4.32.58-3.15 2.98.78 4.32L8 11.35l-3.8 2.05.78-4.32-3.15-2.98 4.32-.58L8 1.6z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <button type="button" className="mm-node-action-btn add nodrag" title="הוסף ענף" onClick={onAdd}>
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+          {!isRoot && (
             <button
               type="button"
-              className={'mm-node-action-btn highlight nodrag' + (node.highlighted ? ' active' : '')}
-              title={node.highlighted ? 'הסר הדגשה' : 'הדגש ענף'}
-              onClick={() => toggleHighlight(id)}
+              className="mm-node-action-btn delete nodrag"
+              title="מחק ענף"
+              onClick={() => requestDelete(id)}
             >
-              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
                 <path
-                  d="M8 1.6l1.85 3.92 4.32.58-3.15 2.98.78 4.32L8 11.35l-3.8 2.05.78-4.32-3.15-2.98 4.32-.58L8 1.6z"
-                  fill="currentColor"
+                  d="M3.2 3.2l9.6 9.6M12.8 3.2l-9.6 9.6"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
                 />
               </svg>
             </button>
-            <button type="button" className="mm-node-action-btn add nodrag" title="הוסף ענף" onClick={onAdd}>
-              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </button>
-            {!isRoot && (
-              <button
-                type="button"
-                className="mm-node-action-btn delete nodrag"
-                title="מחק ענף"
-                onClick={() => requestDelete(id)}
-              >
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-                  <path
-                    d="M3.2 3.2l9.6 9.6M12.8 3.2l-9.6 9.6"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            )}
-          </span>
-        )}
+          )}
+        </span>
       </div>
     </div>
   );
