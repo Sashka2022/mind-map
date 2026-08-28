@@ -123,7 +123,12 @@ export function PrintPreviewModal({ onClose }: PrintPreviewModalProps) {
     setActionError(null);
     try {
       const fileName = `${title || 'מפת-חשיבה'}.jpg`;
-      const blob = await (await fetch(previewUrl)).blob();
+      // The on-screen preview is rendered at a low DPI to stay fast while
+      // the user is still picking paper size/orientation — sharing that
+      // directly produced a blurry, low-quality image. Re-render at the
+      // same DPI used for print/PDF so the shared file is full quality.
+      const shareSnapshot = await renderMapSnapshot(flowNodes, flowEdges, { paper, orientation }, 180, bounds);
+      const blob = await (await fetch(shareSnapshot.dataUrl)).blob();
       const file = new File([blob], fileName, { type: 'image/jpeg' });
 
       // Web Share API with a file attachment — on a phone this opens the

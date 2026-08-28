@@ -41,6 +41,18 @@ function CanvasInner() {
   const isDraggingRef = useRef(false);
   const latestLayout = useRef({ positions, sizes });
   latestLayout.current = { positions, sizes };
+  // Once the user has manually panned/zoomed, later content changes (e.g.
+  // adding a branch) must not silently override their chosen zoom level —
+  // this was reset back to "fit everything" on every edit, which was
+  // especially disruptive on mobile where users zoom in to work on one
+  // branch. Reset the flag whenever the map itself is replaced (reset →
+  // fresh rootId), since the old viewport is meaningless for a new map.
+  const userInteractedRef = useRef(false);
+  const prevRootIdRef = useRef(rootId);
+  if (prevRootIdRef.current !== rootId) {
+    prevRootIdRef.current = rootId;
+    userInteractedRef.current = false;
+  }
 
   const { flowNodes, flowEdges } = useMemo(
     () => buildFlowGraph(nodes, rootId, sizes, positions),
@@ -49,8 +61,9 @@ function CanvasInner() {
 
   // Never fires while the user is actively dragging a node — re-centering
   // mid-drag would yank the view out from under their cursor.
-  function scheduleRecenter() {
+  function scheduleRecenter(force = false) {
     if (isDraggingRef.current) return;
+    if (!force && userInteractedRef.current) return;
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       if (isDraggingRef.current) return;
@@ -73,6 +86,8 @@ function CanvasInner() {
   // width/height (so text never wraps mid-word — see NodeBox/flowGraph).
   // To avoid depending on that timing, center the viewport ourselves from
   // the tree layout's own (already-accurate) positions + measured sizes.
+  // Only does this until the user takes over the viewport themselves (see
+  // onMoveStart below) — after that, edits no longer fight their zoom/pan.
   useEffect(() => {
     scheduleRecenter();
     return () => {
@@ -80,6 +95,14 @@ function CanvasInner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positions, sizes]);
+
+  // React Flow fires onMoveStart with a real event only for user-driven
+  // pans/zooms (touch/wheel/drag) and with `undefined` for programmatic
+  // ones like our own `setViewport` call above — so this only flips for
+  // genuine user interaction, never for our own auto-recentering.
+  function handleMoveStart(event: unknown) {
+    if (event) userInteractedRef.current = true;
+  }
 
   // Dragging a node stores its new center as a manual override; the tree
   // layout then carries the node's whole subtree along with it (see
@@ -110,7 +133,7 @@ function CanvasInner() {
   useEffect(() => {
     const container = wrapRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => scheduleRecenter());
+    const observer = new ResizeObserver(() => scheduleRecenter(true));
     observer.observe(container);
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,6 +150,7 @@ function CanvasInner() {
         onNodeDrag={handleNodeDrag}
         onNodeDragStart={handleNodeDragStart}
         onNodeDragStop={handleNodeDragStop}
+        onMoveStart={handleMoveStart}
         panOnScroll
         zoomOnScroll
         minZoom={0.15}
