@@ -53,6 +53,13 @@ function CanvasInner() {
     prevRootIdRef.current = rootId;
     userInteractedRef.current = false;
   }
+  // Distinguishes our own programmatic setViewport call (below) from every
+  // other kind of viewport change. This can't be done by inspecting the
+  // move event instead: the zoom in/out/fit-view buttons in <Controls> call
+  // React Flow's zoom API directly, the same programmatic way our own
+  // recenter does, so both arrive at onMoveStart with no "real" event either
+  // — inspecting the event can't tell a Controls click from our own call.
+  const isOwnViewportChangeRef = useRef(false);
 
   const { flowNodes, flowEdges } = useMemo(
     () => buildFlowGraph(nodes, rootId, sizes, positions),
@@ -77,7 +84,14 @@ function CanvasInner() {
       const rect = container.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       const viewport = getViewportForBounds(bounds, rect.width, rect.height, 0.15, 1.5, FIT_PADDING);
+      isOwnViewportChangeRef.current = true;
       reactFlow.setViewport(viewport);
+      // Safety net: if the viewport doesn't actually change (e.g. it already
+      // matches these bounds), onMoveStart never fires to clear the flag —
+      // clear it shortly after so it can't wrongly swallow a later real move.
+      setTimeout(() => {
+        isOwnViewportChangeRef.current = false;
+      }, 50);
     }, 120);
   }
 
@@ -96,12 +110,16 @@ function CanvasInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positions, sizes]);
 
-  // React Flow fires onMoveStart with a real event only for user-driven
-  // pans/zooms (touch/wheel/drag) and with `undefined` for programmatic
-  // ones like our own `setViewport` call above — so this only flips for
-  // genuine user interaction, never for our own auto-recentering.
-  function handleMoveStart(event: unknown) {
-    if (event) userInteractedRef.current = true;
+  // Any viewport change that isn't the one we just triggered ourselves is a
+  // genuine user interaction — touch/wheel/drag panning or zooming, or the
+  // zoom in/out/fit-view buttons in <Controls> — after which edits no longer
+  // fight the user's chosen zoom/pan (see scheduleRecenter above).
+  function handleMoveStart() {
+    if (isOwnViewportChangeRef.current) {
+      isOwnViewportChangeRef.current = false;
+      return;
+    }
+    userInteractedRef.current = true;
   }
 
   // Dragging a node stores its new center as a manual override; the tree
