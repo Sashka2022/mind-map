@@ -30,3 +30,26 @@ export async function fileToResizedDataUrl(file: File, maxSize = 320, quality = 
     URL.revokeObjectURL(objectUrl);
   }
 }
+
+/**
+ * Captures the current frame of a live `getUserMedia` video feed as a
+ * downscaled JPEG data URL, mirrored horizontally so the saved photo
+ * matches the mirrored preview the user was looking at (standard selfie
+ * convention).
+ */
+export function videoFrameToResizedDataUrl(video: HTMLVideoElement, maxSize = 320, quality = 0.85): string {
+  const scale = Math.min(1, maxSize / Math.max(video.videoWidth, video.videoHeight));
+  const width = Math.round(video.videoWidth * scale);
+  const height = Math.round(video.videoHeight * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('לא ניתן היה לעבד את התמונה');
+  ctx.translate(width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, width, height);
+
+  return canvas.toDataURL('image/jpeg', quality);
+}

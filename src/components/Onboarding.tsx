@@ -1,11 +1,15 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useMapStore } from '../store/mapStore';
 import { fileToResizedDataUrl } from '../utils/resizeImage';
+import { CameraCaptureModal } from './CameraCaptureModal';
+
+const supportsCameraCapture = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
 export function Onboarding() {
   const [name, setName] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const initMap = useMapStore((s) => s.initMap);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +62,11 @@ export function Onboarding() {
             <button type="button" className="btn-secondary" onClick={() => uploadInputRef.current?.click()}>
               העלה תמונה
             </button>
-            <button type="button" className="btn-secondary" onClick={() => selfieInputRef.current?.click()}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => (supportsCameraCapture ? setShowCamera(true) : selfieInputRef.current?.click())}
+            >
               צלם סלפי
             </button>
             {photoUrl && (
@@ -74,14 +82,16 @@ export function Onboarding() {
             hidden
             onChange={onPhotoChosen}
           />
-          <input
-            ref={selfieInputRef}
-            type="file"
-            accept="image/*"
-            capture="user"
-            hidden
-            onChange={onPhotoChosen}
-          />
+          {!supportsCameraCapture && (
+            <input
+              ref={selfieInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              hidden
+              onChange={onPhotoChosen}
+            />
+          )}
           {photoError && <span className="onboarding-photo-error">{photoError}</span>}
         </div>
 
@@ -89,6 +99,17 @@ export function Onboarding() {
           התחילו למפות
         </button>
       </form>
+
+      {showCamera && (
+        <CameraCaptureModal
+          onCapture={(dataUrl) => {
+            setPhotoUrl(dataUrl);
+            setPhotoError(null);
+            setShowCamera(false);
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 }
