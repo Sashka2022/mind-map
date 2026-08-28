@@ -68,7 +68,7 @@ toggles it; highlighted nodes render in their own branch color (no separate
 fixed palette). `mapStore.ts` has `migrateLegacyHighlights()` to convert any
 old persisted `highlightColor` data on load.
 
-## This session's changes (2026-08-26), 3 merged PRs
+## Development history (multiple Claude Code sessions)
 
 **PR #1** — six requested UI/UX improvements:
 1. Cloud shapes for main branches (originally two overlapping pseudo-element
@@ -103,6 +103,41 @@ for a WhatsApp share button:
   downloading the image (via a `Blob`/object URL — see Gotcha) + opening a
   `wa.me` chat link with prefilled text on desktop.
 
+**PR #4** — added this `CLAUDE.md` file (no code change).
+
+**PR #5** (2026-08-28, separate session) — user reported two mobile issues:
+1. The canvas auto-recentered/re-fit on *every* layout change (including
+   adding a branch), silently overriding any zoom/pan the user had set
+   manually — most disruptive on mobile, where zooming into one branch is
+   the normal way to work. Fixed in `MindMapCanvas.tsx` by tracking a
+   `userInteractedRef` flag: once React Flow's `onMoveStart` fires with a
+   genuine user-driven event, `scheduleRecenter()` stops auto-fitting until
+   the map itself is replaced (rootId changes) or the container really
+   resizes (`scheduleRecenter(true)` forces it).
+2. WhatsApp shares were blurry and sometimes missing connecting lines on
+   phones: `handleShareWhatsapp` was reusing the *low-DPI on-screen preview*
+   image instead of re-rendering at full quality, and the fixed settle
+   delays in `snapshot.tsx` (tuned on a fast desktop) were too short for
+   slower mobile hardware to reliably finish painting the nested edges
+   `<svg>` before capture (same underlying race as Gotcha #1 below, just
+   needing a bigger margin on slow devices). Fixed by re-rendering via
+   `renderMapSnapshot` at DPI 180 for sharing (same as print/PDF) instead of
+   reusing the preview, and by widening `snapshot.tsx`'s fallback paint
+   timeout `300ms → 600ms` and the post-decode settle delay `200ms → 500ms`.
+
+**PR #6** (2026-08-28, separate session, branch `claude/preserve-manual-zoom`)
+— follow-up bug in PR #5's fix: React Flow's `<Controls>` zoom in/out/
+fit-view buttons trigger `onMoveStart` the same *programmatic* way the
+app's own `setViewport` recenter call does, so inspecting the event alone
+couldn't tell them apart — clicking a Controls button wasn't recognized as
+"user interaction", so adding a branch afterward still reset the view.
+Fixed by having the app flag its *own* upcoming `setViewport` call via an
+`isOwnViewportChangeRef` before it runs (with a 50ms-timeout safety net in
+case the viewport doesn't actually change and `onMoveStart` never fires to
+clear it), instead of trying to infer intent from the event object. Any
+other `onMoveStart` — wheel/touch/drag pan/zoom, or a Controls click — is
+now correctly treated as real user interaction.
+
 ## Gotchas / non-obvious things worth knowing before touching export code
 
 1. **React Flow edges vanish from `html-to-image` captures.** React Flow
@@ -119,10 +154,16 @@ for a WhatsApp share button:
    SVG `data:` URL as a plain `<img>` tag shows the edges fine — the bug is
    specifically in `toJpeg`/`toPng`'s internal timing, not the markup.
    Fix (in `src/export/snapshot.tsx`): use `toSvg()` instead of `toJpeg()`,
-   then manually `img.decode()` + wait 2×`requestAnimationFrame` + a 200ms
-   settle timeout, THEN draw to our own canvas. Do not "simplify" this back
-   to `toJpeg`/`toPng` without re-verifying edges survive — the race is real
-   and was reproduced/confirmed via isolated repro pages, not guessed.
+   then manually `img.decode()` + wait 2×`requestAnimationFrame` + a settle
+   timeout, THEN draw to our own canvas. Do not "simplify" this back to
+   `toJpeg`/`toPng` without re-verifying edges survive — the race is real
+   and was reproduced/confirmed via isolated repro pages, not guessed. The
+   settle timeout (currently 500ms, plus a 600ms fallback paint timeout
+   before that) started at 200ms/300ms but was widened in PR #5 after
+   mobile devices — slower at finishing that same internal paint — still
+   dropped edges at the original values; if edges ever go missing again
+   specifically on phones/slow hardware, widening these further is the
+   first thing to try, not re-architecting the capture.
 2. **`html2canvas` (bundled transitively via `jspdf`, not a direct
    dependency) is NOT a safe drop-in replacement** for the above — it has
    its own CSS parser and throws `"unsupported color function "color"` on
@@ -143,7 +184,21 @@ for a WhatsApp share button:
    (`forceSize: true` in `flowGraph.ts`), so removing content changes what
    fits inside that fixed box without changing the box itself, producing
    mismatched spacing between the live map and the exported image.
-5. Local dev in this sandboxed environment: `npm install` was needed
+5. **Detecting "the user manually moved the viewport" is trickier than it
+   looks.** `MindMapCanvas.tsx` needs to stop auto-recentering once the user
+   has taken over pan/zoom, but React Flow's `onMoveStart` fires the same
+   way — with no distinguishing "real" event — for actual touch/wheel/drag
+   input AND for the `<Controls>` zoom buttons AND for the app's own
+   programmatic `reactFlow.setViewport(...)` recenter call. Inspecting the
+   callback's event argument can only ever separate one of those cases from
+   the other two, not all three apart. The working approach: have the app
+   flag its *own* upcoming `setViewport` call ahead of time
+   (`isOwnViewportChangeRef`) and clear the flag in `onMoveStart` — anything
+   that fires `onMoveStart` without that flag set (Controls clicks included)
+   is real user interaction. A timeout safety net clears the flag if
+   `setViewport` doesn't actually change anything (then `onMoveStart` never
+   fires to clear it itself).
+6. Local dev in this sandboxed environment: `npm install` was needed
    (node_modules wasn't pre-populated); Playwright is available globally at
    `/opt/node22/lib/node_modules/playwright` (not as a project dependency —
    import via `import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs'`
@@ -152,12 +207,15 @@ for a WhatsApp share button:
 
 ## Git workflow reminder for this repo
 
-Working branch: `claude/mind-map-improvements-2rrb9e`. The repo owner has
-been merging each PR immediately (squash merge) and asking to see the live
-site — so far every round in this thread has gone: implement → build+lint
-→ browser-verify → commit → push → open PR → merge → confirm GitHub Pages
-deploy succeeded. If continuing work here, remember: once a PR merges, the
-next commits must restart the branch from `origin/master`
-(`git fetch origin master && git checkout -B claude/mind-map-improvements-2rrb9e origin/master`)
-before making further changes, per the standing instruction not to stack
-new commits on already-merged history.
+The repo owner has been merging every PR immediately (squash merge) and
+asking to see the live site — every round so far has gone: implement →
+build+lint → browser-verify → commit → push → open PR → merge → confirm
+GitHub Pages deploy succeeded. Different sessions have used different
+branch names (e.g. `claude/mind-map-improvements-2rrb9e`,
+`claude/preserve-manual-zoom`) — the name doesn't matter, but the pattern
+does: **check `master` for commits you don't recognize before starting**
+(another session may have merged work since you last looked — this
+happened between PR #4 and #5 above), and once a PR merges, restart your
+branch from `origin/master` before making further changes
+(`git fetch origin master && git checkout -B <branch-name> origin/master`)
+rather than stacking new commits on already-merged history.
