@@ -80,7 +80,11 @@ export async function renderMapSnapshot(
   const paint = new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
-  const paintTimeout = new Promise<void>((resolve) => setTimeout(resolve, 300));
+  // The fallback timer matters most on slow/mobile devices, where a large
+  // map can still be laying out well past a desktop-tuned delay — too
+  // short here and the capture below races a half-painted tree, which is
+  // how the connecting lines end up missing from shares taken on phones.
+  const paintTimeout = new Promise<void>((resolve) => setTimeout(resolve, 600));
   await Promise.race([paint, paintTimeout]);
   await document.fonts.ready;
 
@@ -104,9 +108,14 @@ export async function renderMapSnapshot(
       });
       const img = new Image();
       img.src = svgUrl;
+      // `decode()` only guarantees the outer SVG has decoded, not that the
+      // nested <svg> of edges has finished painting internally (see the
+      // race described above) — on slower mobile hardware that internal
+      // paint reliably takes longer, so the settle delay below is deliberately
+      // generous rather than tuned to desktop timing.
       await img.decode().catch(() => undefined);
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
 
       const canvas = document.createElement('canvas');
       canvas.width = pageWidthPx;
