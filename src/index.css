@@ -722,6 +722,30 @@ button {
   font-size: 14px;
 }
 
+.camera-preview-frame {
+  position: relative;
+  border-radius: 10px;
+  background: #111;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  margin-bottom: 20px;
+}
+
+.camera-preview-frame video {
+  width: 100%;
+  max-height: 360px;
+  transform: scaleX(-1);
+  display: block;
+}
+
+.camera-preview-frame .print-preview-loading {
+  position: absolute;
+  color: #fff;
+}
+
 .print-preview-error {
   display: flex;
   flex-direction: column;
