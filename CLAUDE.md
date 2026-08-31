@@ -29,17 +29,23 @@ src/
     bounds.ts                  symmetrizeBounds (keep root centered)
   components/
     MindMapCanvas.tsx          wraps <ReactFlow>, pan/zoom/recenter/drag
-    Toolbar.tsx                 save / print-PDF / reset buttons
-    Onboarding.tsx               first-run: map title + optional photo
+    Toolbar.tsx                 save / print-PDF / reset buttons + Hotam logo
+    Onboarding.tsx               first-run: map title + optional photo + Hotam logo
+    CameraCaptureModal.tsx       getUserMedia live camera modal for the selfie button
     SidePhotoPanel.tsx           persistent corner panel mirroring root photo
     PrintPreviewModal.tsx        print/PDF modal + WhatsApp share button
     nodeTypes.ts / nodes/RootNode.tsx / nodes/BranchNode.tsx / nodes/NodeBox.tsx
                                   NodeBox is the ONE shared component that
                                   renders all node chrome (root/level-1/leaf
                                   are CSS-class variants of the same component)
+  assets/
+    hotam-logo.png               official Hotam logo (Hebrew wordmark + spark),
+                                  imported wherever the app is branded — see
+                                  "Hotam branding" below for every place it's used
   export/
     snapshot.tsx                renderMapSnapshot(): the shared rasterizer
-                                  used by both print and PDF export
+                                  used by print, PDF export, the preview
+                                  thumbnail, and WhatsApp sharing alike
     printMap.ts / exportToPdf.ts / computeFitScale.ts / ExportFlow.tsx
 ```
 
@@ -138,6 +144,31 @@ clear it), instead of trying to infer intent from the event object. Any
 other `onMoveStart` — wheel/touch/drag pan/zoom, or a Controls click — is
 now correctly treated as real user interaction.
 
+**PR #8** (2026-08-28, separate session, branch `claude/selfie-camera-desktop`)
+— the onboarding "צלם סלפי" button used `<input type="file" capture="user">`,
+which most **desktop** browsers simply ignore (they open a plain file picker,
+no camera) — only mobile browsers honor `capture`. Added
+`CameraCaptureModal.tsx`: a `getUserMedia`-based live camera modal (mirrored
+preview + capture button) used whenever `navigator.mediaDevices?.getUserMedia`
+exists, falling back to the old file-input flow only when it's genuinely
+unsupported. `Onboarding.tsx`'s `supportsCameraCapture` constant gates which
+path is used.
+
+**PR #9, #10, #11** (2026-08-31) — user asked to embed the official Hotam
+logo (from Hotam's own brand asset library, `hotam-brand` skill) into the
+app. Added as `src/assets/hotam-logo.png`, then wired in three places:
+- **#9**: `Toolbar.tsx` — top-right of the toolbar next to the map title
+  (`.toolbar-logo`, 28px tall), matching Hotam's own placement rule for RTL.
+- **#10**: `Onboarding.tsx` — centered above the welcome heading
+  (`.onboarding-logo`, 40px tall).
+- **#11**: `src/export/snapshot.tsx` — drawn directly onto the rasterized
+  canvas (top-right, sized as 3.5% of page height so it scales with DPI)
+  *after* the map image itself, inside `renderMapSnapshot()`. Since that
+  function is the one shared rasterizer behind print, PDF export, the
+  print-preview thumbnail, and WhatsApp sharing, this single change brands
+  all four outputs consistently — no per-caller changes needed. Positioned
+  within the page's own margin band so it never overlaps map content.
+
 ## Gotchas / non-obvious things worth knowing before touching export code
 
 1. **React Flow edges vanish from `html-to-image` captures.** React Flow
@@ -204,6 +235,13 @@ now correctly treated as real user interaction.
    import via `import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs'`
    from a plain `.mjs` script run with plain `node`), Chromium binary at
    `/opt/pw-browsers/chromium`.
+7. `src/assets/hotam-logo.png` (the Hebrew wordmark + spark variant) was
+   copied in from Claude's own `hotam-brand` skill asset library
+   (`assets/logo/hotam-logo-hebrew.png` in that skill), not authored in this
+   repo — if it ever needs replacing (e.g. the English/Arabic/white variant,
+   or a design refresh), pull the updated file from that same skill rather
+   than re-creating it, and keep it unmodified per Hotam's own brand rules
+   (no recoloring, no distortion, no effects).
 
 ## Git workflow reminder for this repo
 
