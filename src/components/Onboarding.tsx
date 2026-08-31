@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useMapStore } from '../store/mapStore';
 import { fileToResizedDataUrl } from '../utils/resizeImage';
 import { CameraCaptureModal } from './CameraCaptureModal';
+import hotamLogo from '../assets/hotam-logo.png';
 
 const supportsCameraCapture = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
@@ -36,6 +37,7 @@ export function Onboarding() {
   return (
     <div className="onboarding">
       <form className="onboarding-card" onSubmit={onSubmit}>
+        <img className="onboarding-logo" src={hotamLogo} alt="חותם" />
         <h1>ברוכים הבאים למפת החשיבה</h1>
         <p>הזינו את שמכם או כותרת למפה כדי להתחיל</p>
         <input
