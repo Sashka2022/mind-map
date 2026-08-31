@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMapStore } from '../store/mapStore';
+import hotamLogo from '../assets/hotam-logo.png';
 
 interface ToolbarProps {
   onOpenPrint: () => void;
@@ -66,6 +67,7 @@ export function Toolbar({ onOpenPrint }: ToolbarProps) {
 
   return (
     <div className="toolbar">
+      <img className="toolbar-logo" src={hotamLogo} alt="חותם" />
       <span className="toolbar-title">{title}</span>
       {showSaved && <span className="saved-flash">נשמר ✓</span>}
       <button type="button" className="toolbar-btn primary" onClick={saveNow}>
