@@ -9,9 +9,15 @@ import { ConfirmResetDialog } from './components/ConfirmResetDialog';
 import { PrintPreviewModal } from './components/PrintPreviewModal';
 
 function App() {
+  const hasHydrated = useMapStore((s) => s.hasHydrated);
   const initialized = useMapStore((s) => s.initialized);
   const [printOpen, setPrintOpen] = useState(false);
 
+  // Wait for the persisted map to load from localStorage before deciding
+  // whether to show onboarding — otherwise every reload briefly shows
+  // onboarding first, and submitting it during that flash overwrites the
+  // saved map with a blank one.
+  if (!hasHydrated) return null;
   if (!initialized) return <Onboarding />;
 
   return (

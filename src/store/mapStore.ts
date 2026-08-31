@@ -6,6 +6,8 @@ import { estimateSize } from '../layout/nodeSizing';
 import { ALL_DIRECTIONS, type Direction, type MapNode, type Point, type Size } from '../types';
 
 interface MapState {
+  /** False until zustand's persist middleware has finished reading localStorage. */
+  hasHydrated: boolean;
   initialized: boolean;
   title: string;
   /** Data URL of the onboarding photo/selfie, shown as the root's avatar. */
@@ -48,6 +50,7 @@ interface MapState {
   cancelReset: () => void;
   confirmReset: () => void;
   clearEditRequest: () => void;
+  markHydrated: () => void;
 }
 
 function makeNode(partial: Pick<MapNode, 'text' | 'parentId'> & Partial<MapNode>): MapNode {
@@ -97,6 +100,7 @@ function relayoutAll(
 export const useMapStore = create<MapState>()(
   persist(
     (set, get) => ({
+      hasHydrated: false,
       initialized: false,
       title: '',
       photoUrl: null,
@@ -329,6 +333,8 @@ export const useMapStore = create<MapState>()(
         }),
 
       clearEditRequest: () => set({ editRequestId: null }),
+
+      markHydrated: () => set({ hasHydrated: true }),
     }),
     {
       name: 'mind-map-storage',
@@ -342,8 +348,14 @@ export const useMapStore = create<MapState>()(
         overrides: state.overrides,
       }),
       onRehydrateStorage: () => (state) => {
+        // Runs after persisted data (if any) is merged into the store, on the
+        // NEXT microtask after the app's first render — until this fires,
+        // `initialized` reads its default `false`, so callers must wait for
+        // `hasHydrated` before deciding whether to show onboarding. Also
+        // fires (with only default state) when there's nothing persisted yet.
         state?.migrateLegacyHighlights();
         state?.relayout();
+        state?.markHydrated();
       },
     },
   ),
