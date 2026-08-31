@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { getNodesBounds, type Edge, type Node } from '@xyflow/react';
 import { ExportFlow } from './ExportFlow';
 import { computeFitScale, type Bounds, type PageSpec } from './computeFitScale';
+import hotamLogoUrl from '../assets/hotam-logo.png';
 
 export interface SnapshotResult {
   dataUrl: string;
@@ -125,6 +126,27 @@ export async function renderMapSnapshot(
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, pageWidthPx, pageHeightPx);
+
+      // Brand the exported page the same way the live app is branded (see
+      // Toolbar.tsx/Onboarding.tsx) — top-right corner, scaled to the page
+      // rather than a fixed pixel size so it looks right whether this is
+      // the small preview thumbnail or a full-DPI print/PDF page.
+      const logo = new Image();
+      logo.src = hotamLogoUrl;
+      await logo.decode().catch(() => undefined);
+      if (logo.naturalWidth && logo.naturalHeight) {
+        const logoHeight = pageHeightPx * 0.035;
+        const logoWidth = logoHeight * (logo.naturalWidth / logo.naturalHeight);
+        const logoPadding = logoHeight * 0.4;
+        ctx.drawImage(
+          logo,
+          pageWidthPx - logoWidth - logoPadding,
+          logoPadding,
+          logoWidth,
+          logoHeight,
+        );
+      }
+
       return canvas.toDataURL('image/jpeg', 0.92);
     };
 
