@@ -185,6 +185,12 @@ button {
   z-index: 10;
 }
 
+.toolbar-logo {
+  height: 28px;
+  width: auto;
+  flex: none;
+}
+
 .toolbar-title {
   font-weight: 700;
   font-size: clamp(14px, 3.5vw, 16px);
